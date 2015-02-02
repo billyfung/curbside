@@ -3,31 +3,35 @@ import urllib.request
 import json 
 
 #search the tree to find greatest depth secrets
-#session needs to be re-done every time
-def search(s, depth, session):
-	# refresh session id 
-	opensession = urllib.request.Request('http://challenge.shopcurbside.com/%s' % s, headers={'Session':session})
+#refresh session token, timed out after 10 requests, 404 error 
+#could have used requests library as well
+def search(s, depth):
+	# refresh session id
+	#message = '' 
 	session = urllib.request.urlopen('http://challenge.shopcurbside.com/get-session').read().decode('utf-8')
+	opensession = urllib.request.Request('http://challenge.shopcurbside.com/%s' % s, headers={'Session':session})	
 	try:
-		abc = urllib.request.urlopen(opensession)
-		f = abc.read()
-		abc.close()
-	except:
-		print('error: %s' % f)
+		a = urllib.request.urlopen(opensession)
+		b = a.read()
+		a.close()
+	except: #error checking since it was failing, discovered the next: isn't always a list of strings 
+		print('error: %s' % b)
 		return 
-	secret = json.loads(s.decode('utf-8').lower())
-	#need to parse to be all lowercase
-	if 'message' in secret:
-		print(secret['message'])
+	secret = json.loads(b.decode('utf-8').lower())
+	#normalize to all lowercase, incase of stuff like neXT NeXT...
+	#iterate through the keys in 'next:'
 	if 'next' in secret:
-		#check to see if list or single string
+		#check to see if next key is list or single string
 		if isinstance(secret['next'], str):
-			search(secret['next'], depth+1, session)
+			search(secret['next'], depth+1)
 		else: #if not a string iterate through the list
 			for i in secret['next']:
-				search(i, depth+1, session)	 #omg recursion 
+				search(i, depth+1)	 #omg recursion 
 	else:
+		#message = message + secret['secret']
 		print(secret['secret'])
+		#return message
 
-session = urllib.request.urlopen('http://challenge.shopcurbside.com/get-session').read().decode('utf-8')
-search('start', 0, session)
+#probably better to pop each secret into a string and then print string at the end
+#this method isn't very fast, O(n)?... wonder if there is a faster way
+search('start', 0)
